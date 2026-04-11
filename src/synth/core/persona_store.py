@@ -31,7 +31,7 @@ class PersonaStore:
             slug = _slug_from_persona(persona)
         path = self.directory / f"{slug}.yaml"
         data = persona.model_dump(mode="json")
-        path.write_text(yaml.dump(data, default_flow_style=False, sort_keys=False))
+        path.write_text(yaml.safe_dump(data, default_flow_style=False, sort_keys=False))
         return path
 
     def load(self, slug: str) -> PersonaModel | None:
@@ -71,7 +71,7 @@ class PersonaStore:
         """Save shared domain context."""
         path = self.directory / ".domain.yaml"
         data = ctx.model_dump(mode="json")
-        path.write_text(yaml.dump(data, default_flow_style=False, sort_keys=False))
+        path.write_text(yaml.safe_dump(data, default_flow_style=False, sort_keys=False))
         return path
 
     def load_presets(self) -> dict[str, Any]:

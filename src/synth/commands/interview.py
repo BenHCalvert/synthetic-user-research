@@ -19,7 +19,7 @@ def interview(
     ),
     topic: str = typer.Option(None, help="Interview topic or problem statement"),
     interactive: bool = typer.Option(False, help="Run in interactive mode"),
-    model: str = typer.Option(None, help="Model label to use"),
+    model: str | None = typer.Option(None, help="Model label to use"),
     directory: Path = typer.Option(Path("personas"), help="Persona directory"),
     output_dir: Path = typer.Option(Path("transcripts"), help="Transcript output directory"),
 ) -> None:

@@ -86,7 +86,7 @@ def init_command() -> None:
     # Write config
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     CONFIG_PATH.write_text(
-        yaml.dump(config.model_dump(), default_flow_style=False, sort_keys=False)
+        yaml.safe_dump(config.model_dump(), default_flow_style=False, sort_keys=False)
     )
 
     console.print(f"\n[green]Config written to {CONFIG_PATH}[/green]")

@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
+from rich.console import Console
 
 from synth.models.synthesis import (
     ConvergentTheme,
@@ -13,6 +14,8 @@ from synth.models.synthesis import (
     SynthesisReport,
     TriageEntry,
 )
+
+console = Console()
 
 if TYPE_CHECKING:
     from synth.core.llm import LLM
@@ -91,8 +94,7 @@ class PanelSynthesizer:
             }
         ]
 
-
-        # Use LLM for rich analysis, fall back to simple grouping
+        # Use LLM for rich analysis, fall back to empty on LLM/parse errors
         try:
             result = await self.llm.structured_complete(
                 system,
@@ -101,8 +103,8 @@ class PanelSynthesizer:
                 _ConvergentThemeList,
             )
             return result.themes  # type: ignore[return-value]
-        except Exception:
-            # Fallback: return empty if LLM fails
+        except (ValueError, RuntimeError) as e:
+            console.print(f"[yellow]Convergent theme analysis failed: {e}[/yellow]")
             return []
 
     async def find_divergent_themes(
@@ -130,7 +132,8 @@ class PanelSynthesizer:
                 system, messages, model_label, _DivergenceResult
             )
             return result.model_divergent, result.persona_divergent  # type: ignore[return-value]
-        except Exception:
+        except (ValueError, RuntimeError) as e:
+            console.print(f"[yellow]Divergence analysis failed: {e}[/yellow]")
             return [], []
 
 

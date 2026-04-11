@@ -25,7 +25,7 @@ console = Console()
 
 def _build_system_prompt(persona: PersonaModel, mode: str) -> str:
     """Construct the full system prompt from persona + interview guide."""
-    persona_yaml = yaml.dump(
+    persona_yaml = yaml.safe_dump(
         persona.model_dump(mode="json"), default_flow_style=False, sort_keys=False
     )
 
@@ -82,8 +82,7 @@ async def _run_autonomous_interview(
     console.print(f"\n[bold green]{persona.persona}:[/bold green] {response}")
 
     # Core questions
-    core_questions = guide["core_questions"]
-    assert isinstance(core_questions, list)
+    core_questions = list(guide["core_questions"])
     for question_template in core_questions:
         question = question_template.format(topic=topic)
         transcript.append({"role": "user", "content": question})
@@ -94,8 +93,7 @@ async def _run_autonomous_interview(
         console.print(f"\n[bold green]{persona.persona}:[/bold green] {response}")
 
     # Anti-sycophancy probes
-    probes = guide["anti_sycophancy_probes"]
-    assert isinstance(probes, list)
+    probes = list(guide["anti_sycophancy_probes"])
     for probe_template in probes:
         probe = probe_template.format(topic=topic)
         transcript.append({"role": "user", "content": probe})

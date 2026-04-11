@@ -43,7 +43,11 @@ def panel(
         if preset not in presets:
             console.print(f"[red]Preset '{preset}' not found.[/red]")
             raise typer.Exit(code=1)
-        persona_slugs = presets[preset]["personas"]
+        preset_data = presets[preset]
+        if "personas" not in preset_data:
+            console.print(f"[red]Preset '{preset}' missing 'personas' key.[/red]")
+            raise typer.Exit(code=1)
+        persona_slugs = preset_data["personas"]
     elif personas:
         persona_slugs = [s.strip() for s in personas.split(",")]
     else:

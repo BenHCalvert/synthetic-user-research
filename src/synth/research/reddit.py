@@ -58,7 +58,7 @@ async def search_reddit(
                     response.raise_for_status()
                     data = response.json()
                     results.extend(_parse_reddit_response(data))
-                except Exception as e:
+                except httpx.HTTPError as e:
                     console.print(f"[yellow]Reddit search failed for r/{sub}: {e}[/yellow]")
         else:
             url = "https://www.reddit.com/search.json"
@@ -73,7 +73,7 @@ async def search_reddit(
                 response.raise_for_status()
                 data = response.json()
                 results.extend(_parse_reddit_response(data))
-            except Exception as e:
+            except httpx.HTTPError as e:
                 console.print(f"[yellow]Reddit search failed: {e}[/yellow]")
 
     # Sort by engagement

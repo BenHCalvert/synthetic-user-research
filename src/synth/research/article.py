@@ -2,11 +2,23 @@
 
 from __future__ import annotations
 
+import asyncio
+from urllib.parse import urlparse
+
 import httpx
 from bs4 import BeautifulSoup
 from rich.console import Console
 
 console = Console()
+
+_ALLOWED_SCHEMES = {"http", "https"}
+
+
+def _validate_url(url: str) -> None:
+    """Validate URL scheme to prevent SSRF."""
+    parsed = urlparse(url)
+    if parsed.scheme not in _ALLOWED_SCHEMES:
+        raise ValueError(f"URL scheme '{parsed.scheme}' not allowed (only http/https)")
 
 
 class ArticleContent:
@@ -21,6 +33,12 @@ class ArticleContent:
 
 async def extract_article(url: str) -> ArticleContent | None:
     """Fetch and extract main content from a web article."""
+    try:
+        _validate_url(url)
+    except ValueError as e:
+        console.print(f"[yellow]Skipping invalid URL {url}: {e}[/yellow]")
+        return None
+
     async with httpx.AsyncClient() as client:
         try:
             response = await client.get(
@@ -30,11 +48,12 @@ async def extract_article(url: str) -> ArticleContent | None:
                 follow_redirects=True,
             )
             response.raise_for_status()
-        except Exception as e:
+            html = response.text
+        except httpx.HTTPError as e:
             console.print(f"[yellow]Failed to fetch {url}: {e}[/yellow]")
             return None
 
-    soup = BeautifulSoup(response.text, "html.parser")
+    soup = BeautifulSoup(html, "html.parser")
 
     # Extract title
     title = ""
@@ -47,7 +66,10 @@ async def extract_article(url: str) -> ArticleContent | None:
         tag.decompose()
 
     # Try to find main content area
-    main = soup.find("main") or soup.find("article") or soup.find("body")
+    main = soup.find("main") or soup.find("article")
+    if main is None:
+        # Fall back to body, but only if it has paragraph content
+        main = soup.find("body")
     if main is None:
         return None
 
@@ -72,10 +94,7 @@ async def extract_article(url: str) -> ArticleContent | None:
 
 
 async def extract_articles(urls: list[str]) -> list[ArticleContent]:
-    """Extract content from multiple articles."""
-    results: list[ArticleContent] = []
-    for url in urls:
-        article = await extract_article(url)
-        if article:
-            results.append(article)
-    return results
+    """Extract content from multiple articles in parallel."""
+    tasks = [extract_article(url) for url in urls]
+    raw_results = await asyncio.gather(*tasks)
+    return [r for r in raw_results if r is not None]

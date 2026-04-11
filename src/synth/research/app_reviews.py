@@ -14,6 +14,14 @@ if TYPE_CHECKING:
 console = Console()
 
 
+def _safe_int(value: str | int, default: int = 3) -> int:
+    """Safely parse an integer, returning default on failure."""
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        return default
+
+
 class AppReview:
     """A single app store review."""
 
@@ -70,13 +78,13 @@ async def _fetch_apple_reviews(app_id: str, max_results: int) -> list[AppReview]
                     reviews.append(
                         AppReview(
                             text=entry.get("content", {}).get("label", ""),
-                            rating=int(entry.get("im:rating", {}).get("label", "3")),
+                            rating=_safe_int(entry.get("im:rating", {}).get("label", "3")),
                             date=entry.get("updated", {}).get("label", ""),
                             store="apple",
                             title=entry.get("title", {}).get("label", ""),
                         )
                     )
-        except Exception as e:
+        except httpx.HTTPError as e:
             console.print(f"[yellow]Apple review fetch failed: {e}[/yellow]")
 
     return reviews
@@ -113,7 +121,7 @@ async def _fetch_google_reviews(app_id: str, max_results: int) -> list[AppReview
                             store="google",
                         )
                     )
-        except Exception as e:
+        except httpx.HTTPError as e:
             console.print(f"[yellow]Google Play review fetch failed: {e}[/yellow]")
 
     return reviews

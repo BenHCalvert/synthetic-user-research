@@ -71,7 +71,7 @@ async def run_panel(
 
     if not personas:
         console.print("[red]No valid personas loaded.[/red]")
-        raise SystemExit(1)
+        raise RuntimeError("No valid personas loaded for panel")
 
     console.print(
         Panel(

@@ -1,6 +1,5 @@
 """Evidence traceability spot-checks for persona schemas."""
 
-
 import yaml
 
 from synth.models.persona import PersonaModel
