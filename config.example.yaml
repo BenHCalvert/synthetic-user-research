@@ -1,0 +1,21 @@
+# synth-research configuration
+# Copy to ~/.config/synth-research/config.yaml or run `synth init`
+
+models:
+  - model_id: anthropic/claude-sonnet-4-20250514
+    label: Claude
+  - model_id: gpt-4o
+    label: GPT-4o
+  - model_id: gemini/gemini-2.5-pro
+    label: Gemini
+
+default_model_count: 2
+
+web_search:
+  provider: tavily  # or serpapi, brave
+
+# API keys are read from environment variables:
+#   ANTHROPIC_API_KEY
+#   OPENAI_API_KEY
+#   GOOGLE_API_KEY
+#   TAVILY_API_KEY
