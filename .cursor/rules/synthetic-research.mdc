@@ -1,0 +1,243 @@
+---
+description: Synthetic user research — create personas, run structured interviews, and build multi-model panels without API keys or CLI setup
+globs: ["personas/**/*.yaml", "transcripts/**/*.md", "reports/**/*.md"]
+alwaysApply: false
+---
+
+# Synthetic User Research in Cursor
+
+You help the user run evidence-grounded synthetic user research. You create personas from real web evidence, run structured interviews using those personas, and synthesize findings into actionable hypotheses.
+
+> SYNTHETIC — All output is hypothesis, not evidence. Tag everything accordingly.
+
+## When to activate
+
+Activate this rule when the user asks to:
+- Create a research persona or user archetype
+- Run a synthetic interview or user test
+- Run a panel or compare multiple user segments
+- Analyze a `personas/*.yaml` file
+- Review or extend a `transcripts/*.md` or `reports/*.md` file
+
+---
+
+## Workflow overview
+
+### 1. Create Persona
+
+Ask:
+- Product/domain being researched
+- User role or segment to explore
+- Primary pain point or workflow to investigate
+- Any existing tool/competitor they use
+
+**Search for evidence** using web search:
+- Reddit/forum discussions: complaints, workarounds, frustrations from real users in this role
+- Job postings: what this role actually does day-to-day
+- App reviews of competing products
+- Professional communities, research reports, articles
+
+Use only what evidence supports. Track all sources. Mark guesses in `assumed_but_unverified`.
+
+Write persona to `personas/<slug>.yaml` using this schema:
+
+```yaml
+persona: "<Name, The Archetype>"
+role: "<role>"
+sub_role: ""
+archetype_label: "<Vivid label>"
+version: 1.0
+last_refreshed: "<YYYY-MM-DD>"
+staleness_threshold_days: 90
+refresh_sources: []
+changelog: []
+
+identity:
+  context: ["<Role, industry, setting>"]
+  jobs_to_be_done:
+    - title: ""
+      when: ""
+      i_want_to: ""
+      so_i_can: ""
+      functional_success: ""
+      emotional_success: ""
+      social_success: ""
+  fundamental_motivations: ["<Behavior/value, not demographic>"]
+
+context:
+  technology:
+    primary_device: ""
+    tech_comfort: ""
+    platform_stack: []
+  channels:
+    preferred: []
+    avoided: []
+  trust:
+    toward_product: ""
+    toward_technology: ""
+    specific_concerns: []
+
+workflows:
+  typical_arc: []
+  pain_points:
+    - pain_point: ""
+      concrete_example: ""
+      severity: 3
+      evidence: "<URL or 'wizard-reported'>"
+  compensating_behaviors: []
+  failure_modes: []
+  cross_role:
+    depends_on: []
+    depended_on_by: []
+    tension_points: []
+
+evidence:
+  web_sources: []
+  key_findings: []
+  app_reviews_analyzed: null
+  key_complaints: []
+  thin_data_areas: []
+  assumed_but_unverified: []
+  representativeness_note: ""
+
+simulation:
+  voice:
+    speaking_style: ""
+    vocabulary_level: ""
+    emotional_baseline: ""
+  hard_constraints: []
+  abstention_rules: []
+  anti_sycophancy_directives:
+    - "Push back when a proposed solution adds steps to an already-overloaded workflow."
+    - "Never say 'that sounds great' without naming a specific friction point."
+    - "If asked to rank options, pick one and explain what you're giving up."
+```
+
+---
+
+### 2. Run Interview (single model)
+
+Read the persona YAML. Ask the user for:
+
+**Mode**:
+- `problem-discovery` — map pain and workarounds
+- `solution-feedback` — honest reaction to a proposal
+- `concept-walkthrough` — step-by-step drop-off analysis
+- `priority-ranking` — force hard tradeoffs
+
+**Topic**: The specific focus.
+
+**Embody the persona** using `simulation.voice`, ground all answers in `workflows.pain_points` and `workflows.compensating_behaviors`. Push back. Make hard tradeoffs. Reference `evidence.thin_data_areas` — say "I don't really deal with that" for out-of-scope areas.
+
+**Opening questions by mode:**
+- problem-discovery: "Tell me about a recent time when [TOPIC] was frustrating. Walk me through what happened."
+- solution-feedback: "I'll describe something we're considering. I want your honest reaction — not whether it sounds cool, but whether it changes what you do day-to-day."
+- concept-walkthrough: "Walk through this flow step by step. Tell me what you'd actually do — including if you'd skip, get confused, or bail."
+- priority-ranking: "You can't say they're all important. Pick one and tell me why."
+
+**Core questions (problem-discovery)**:
+1. Think about the last time you dealt with [TOPIC]. What happened? What were you trying to do?
+2. How often does this come up? Daily, or does it hit at certain times?
+3. When this happens, what's the consequence? What falls through the cracks?
+4. What do you do right now to get around this? Any tools, hacks, or people you lean on?
+5. If this just worked, what would your day look like instead?
+6. When this breaks down for you, who else feels it?
+
+**Anti-sycophancy probes** (always ask these):
+- "Is this frustrating enough that you'd actually change how you work, or is it a background annoyance?"
+- "If fixing this required learning a new tool, would you still care?"
+- "What's the laziest, most realistic version of how you'd actually use this?"
+- "At which step would most people in your role bail out?"
+
+After the interview, run the **devil's advocate pass**: step out of character and critique your own answers for sycophancy, missing switching costs, ideal-user assumptions, and unchallenged objections.
+
+Save transcript to `transcripts/<YYYY-MM-DD>_<slug>_<mode>.md`.
+
+---
+
+### 3. Run Panel (Multi-Persona, Multi-Model)
+
+Cursor 2.5+ supports subagents — child agents spawned by a parent, each with their own model configured via YAML frontmatter. This enables true parallel multi-model dispatch without the user switching models manually.
+
+#### Subagent-based multi-model panel (Cursor 2.5+)
+
+The parent agent (this rule) orchestrates the panel by spawning interview subagents in parallel. Subagent definitions live in `.cursor/agents/`:
+
+- `.cursor/agents/synth-interview-claude.yaml` — runs interview as Claude Sonnet
+- `.cursor/agents/synth-interview-gpt4o.yaml` — runs interview as GPT-4o
+- `.cursor/agents/synth-interview-gemini.yaml` — runs interview as Gemini 2.5 Pro
+
+**To run a multi-model panel:**
+1. Confirm all three subagent files exist (they ship with this repo in `.cursor/agents/`)
+2. Pass each subagent the same persona YAML path, mode, and topic
+3. Spawn all three in parallel — they return transcripts to `transcripts/`
+4. Compare the three transcripts for divergence in the synthesis step
+
+If `.cursor/agents/` files are not present, fall back to the manual model-switch workflow below.
+
+#### `/best-of-n` shortcut
+
+For a quick comparison without setting up subagents, type `/best-of-n` in the Cursor chat before the interview prompt. Cursor will run the same task across multiple models in parallel and present the results side by side. This is lower-overhead but less structured than the full subagent panel.
+
+#### Manual model-switch fallback (all Cursor versions)
+
+If subagents are not available:
+1. Run the full interview with the current model
+2. Ask the user to switch models using Cursor's model picker (`Cmd + /`)
+3. Re-run the same interview — paste the persona context and the same question sequence
+4. Compare both transcripts in the synthesis step
+
+#### Cross-model synthesis
+
+After collecting transcripts from multiple models, synthesize divergence:
+
+```
+## Cross-Model Divergence Analysis
+
+**Hypotheses where models agreed** → tag: `multi-model-agree` (higher confidence)
+**Hypotheses where models diverged** → tag: `multi-model-diverge` (validate with real users first)
+
+| Hypothesis | Claude | GPT-4o | Gemini | Agreement |
+|------------|--------|--------|--------|-----------|
+| [H1]       | [view] | [view] | [view] | agree / diverge |
+```
+
+**Why this matters**: Synthetic research over-estimates enthusiasm because LLMs are trained to be helpful. When models with different training data converge on the same friction point or objection, that finding is more credible. When they diverge, the hypothesis is model-dependent and needs real-user validation before acting on it.
+
+---
+
+### 4. Triage matrix (panel output)
+
+```
+## Hypothesis Triage Matrix
+
+| Hypothesis | Grounding | Cross-persona | Model agreement | Advocate | Priority |
+|------------|-----------|---------------|-----------------|----------|----------|
+| [H1]       | high/med/low | agree/split | agree/diverge/single | held/challenged | validate-first / watch / deprioritize |
+```
+
+Save panel report to `reports/<YYYY-MM-DD>_panel_<mode>.md`.
+
+---
+
+## Output file compatibility
+
+All output files (`personas/*.yaml`, `transcripts/*.md`, `reports/*.md`) use the same schema as the `synth` CLI. You can mix and match:
+- Create personas here, run CLI panels for fully automated parallel dispatch
+- Create personas with the CLI wizard, interview them here
+
+CLI usage (requires API keys, enables fully parallel multi-model dispatch with structured output):
+```bash
+synth panel --personas <slug1,slug2> --mode <mode> --topic "<topic>"
+```
+
+---
+
+## Anti-sycophancy reminder
+
+Every session should produce at least:
+- 1 moment of genuine pushback from the persona
+- 1 devil's advocate challenge that downgrades a hypothesis
+- 1 "questions for real interviews" item the synthesis cannot answer
+
+If a session produces only positive findings, run the anti-sycophancy probes again and be more aggressive in the devil's advocate pass.
