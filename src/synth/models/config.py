@@ -17,7 +17,7 @@ class ModelConfig(BaseModel):
 class WebSearchConfig(BaseModel):
     """Web search provider configuration."""
 
-    provider: str = "tavily"
+    provider: str = "duckduckgo"
 
 
 class AppConfig(BaseSettings):

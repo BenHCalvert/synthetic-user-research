@@ -1,4 +1,4 @@
-"""Web search wrapper supporting Tavily, SerpAPI, and Brave."""
+"""Web search wrapper supporting DuckDuckGo (free), Tavily, SerpAPI, and Brave."""
 
 from __future__ import annotations
 
@@ -28,7 +28,9 @@ class WebSearcher:
 
     async def search(self, query: str, max_results: int = 5) -> list[SearchResult]:
         """Run a web search and return results."""
-        if self.provider == "tavily":
+        if self.provider == "duckduckgo":
+            return await self._duckduckgo_search(query, max_results)
+        elif self.provider == "tavily":
             return await self._tavily_search(query, max_results)
         elif self.provider == "serpapi":
             return await self._serpapi_search(query, max_results)
@@ -36,6 +38,26 @@ class WebSearcher:
             return await self._brave_search(query, max_results)
         else:
             raise ValueError(f"Unknown search provider: {self.provider}")
+
+    async def _duckduckgo_search(self, query: str, max_results: int) -> list[SearchResult]:
+        """Search via DuckDuckGo (no API key required)."""
+        import asyncio
+
+        from duckduckgo_search import DDGS
+
+        def _run() -> list[SearchResult]:
+            with DDGS() as ddgs:
+                results = list(ddgs.text(query, max_results=max_results))
+            return [
+                SearchResult(
+                    title=r.get("title", ""),
+                    url=r.get("href", ""),
+                    snippet=r.get("body", ""),
+                )
+                for r in results
+            ]
+
+        return await asyncio.get_event_loop().run_in_executor(None, _run)
 
     async def _tavily_search(self, query: str, max_results: int) -> list[SearchResult]:
         """Search via Tavily API."""
