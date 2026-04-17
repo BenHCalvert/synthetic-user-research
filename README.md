@@ -24,6 +24,29 @@ The output isn't "insights." It's **confidence-tagged hypotheses** labeled SYNTH
 
 ## Quick Start
 
+Choose your entry point:
+
+### Option 1: Claude Code or Cursor (no install, no API keys)
+
+If you're already working inside Claude Code or Cursor, no setup is needed. The IDE provides the LLM and web search natively.
+
+**Claude Code** — invoke as slash commands:
+```
+/synthetic-research:create-persona   # Build an evidence-grounded persona
+/synthetic-research:interview        # Run a structured interview with a persona
+/synthetic-research:panel            # Run a multi-persona panel
+```
+
+**Cursor** — the rule activates automatically when you open persona, transcript, or report files, or ask to run research. In Cursor 2.5+, multi-model panels dispatch Claude, GPT-4o, and Gemini as parallel subagents — no manual model-switching needed.
+
+Output files (`personas/`, `transcripts/`, `reports/`) are fully compatible with the CLI, so you can mix both approaches freely.
+
+---
+
+### Option 2: CLI (full multi-model automation, CI-ready)
+
+Requires API keys for each model provider and a web search provider. Enables fully automated parallel multi-model panels.
+
 ```bash
 # Install with uv (recommended) or pip
 uv pip install -e ".[dev]"
@@ -47,6 +70,14 @@ synth panel \
   --topic "consolidated notification feed" \
   --model-depth standard
 ```
+
+| | Claude Code / Cursor | CLI |
+|---|---|---|
+| API keys required | None | Anthropic + web search provider |
+| Install step | None | `uv pip install -e ".[dev]"` |
+| Web search | Built-in (IDE native) | Tavily / SerpAPI / Brave |
+| Multi-model panels | Parallel subagents (Cursor 2.5+) or single-model | Fully automated parallel dispatch |
+| Best for | Interactive research sessions | Automation, CI, batch panels |
 
 ## What You Get
 
@@ -90,14 +121,16 @@ When Claude and GPT-4o disagree about the same persona (Teacher, above), that's 
 
 | Feature | What it does |
 |---------|-------------|
+| **IDE-native skills** | Claude Code slash commands + Cursor rule — no install or API keys needed |
 | **Persona wizard** | Interactive creation with LLM-synthesized JTBD, simulation controls, and anti-sycophancy directives |
 | **3-layer persona schema** | Stable identity (L1) / context & constraints (L2) / workflows & pain points (L3) |
-| **Web research grounding** | Enriches personas with Reddit, app reviews, and articles via Tavily/SerpAPI/Brave |
+| **Web research grounding** | Enriches personas with Reddit, app reviews, and articles (IDE: built-in search; CLI: Tavily/SerpAPI/Brave) |
 | **Four interview modes** | Problem discovery, solution feedback, concept walkthrough, priority ranking |
-| **Multi-model panels** | Same interview on Claude + GPT-4o + Gemini, then compare for model-specific bias |
+| **Multi-model panels** | Same interview on Claude + GPT-4o + Gemini; parallel subagents in Cursor 2.5+, automated dispatch via CLI |
 | **Devil's advocate** | Adversarial pass challenging sycophantic consensus and ideal-user assumptions |
 | **Confidence tags** | Every finding tagged `[grounding, model_agreement, advocate_status]` |
 | **Staleness detection** | Tracks `last_refreshed`, warns when personas need re-grounding |
+| **Compatible outputs** | `personas/`, `transcripts/`, `reports/` shared between IDE skills and CLI |
 
 ## How the Panel Engine Works
 
