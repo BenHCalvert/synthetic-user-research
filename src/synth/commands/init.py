@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 from typing import Annotated
 
+import questionary
 import typer
 import yaml
 from rich.console import Console
@@ -17,6 +18,30 @@ console = Console()
 CONFIG_DIR = Path.home() / ".config" / "synth-research"
 CONFIG_PATH = CONFIG_DIR / "config.yaml"
 
+_CUSTOM_ID_OPTION = "[ enter custom ID... ]"
+
+_CURATED_MODELS: dict[str, list[str]] = {
+    "anthropic": [
+        "anthropic/claude-opus-4-7",
+        "anthropic/claude-sonnet-4-7",
+        "anthropic/claude-sonnet-4-6",
+        "anthropic/claude-haiku-4-5-20251001",
+    ],
+    "openai": [
+        "gpt-4o",
+        "gpt-4o-mini",
+        "o3",
+        "o3-mini",
+        "o1",
+        "o1-mini",
+    ],
+    "google": [
+        "gemini/gemini-2.5-pro",
+        "gemini/gemini-2.5-flash",
+        "gemini/gemini-2.0-flash",
+    ],
+}
+
 # Env var required for each provider
 _MODEL_ENV_VARS: dict[str, tuple[str, str]] = {
     "anthropic": ("ANTHROPIC_API_KEY", "https://console.anthropic.com/"),
@@ -28,6 +53,17 @@ _SEARCH_ENV_VARS: dict[str, tuple[str, str]] = {
     "serpapi": ("SERPAPI_API_KEY", "https://serpapi.com/manage-api-key"),
     "brave": ("BRAVE_API_KEY", "https://brave.com/search/api/"),
 }
+
+
+def _pick_model(provider: str, label: str) -> str:
+    """Arrow-key model picker. Falls back to free-text if the user chooses custom."""
+    choices = _CURATED_MODELS[provider] + [_CUSTOM_ID_OPTION]
+    choice = questionary.select(f"  {label} model:", choices=choices).ask()
+    if choice is None:
+        raise typer.Exit(code=1)
+    if choice == _CUSTOM_ID_OPTION:
+        return Prompt.ask(f"  Custom {label} model ID")
+    return choice
 
 
 def _model_provider(model_id: str) -> str:
@@ -117,33 +153,15 @@ def init_command(
 
     # Anthropic
     if Confirm.ask("Use Anthropic (Claude) models?", default=True):
-        models.append(
-            ModelConfig(
-                model_id=Prompt.ask(
-                    "Anthropic model ID",
-                    default="anthropic/claude-sonnet-4-20250514",
-                ),
-                label="Claude",
-            )
-        )
+        models.append(ModelConfig(model_id=_pick_model("anthropic", "Claude"), label="Claude"))
 
     # OpenAI
     if Confirm.ask("Use OpenAI models?", default=True):
-        models.append(
-            ModelConfig(
-                model_id=Prompt.ask("OpenAI model ID", default="gpt-4o"),
-                label="GPT-4o",
-            )
-        )
+        models.append(ModelConfig(model_id=_pick_model("openai", "OpenAI"), label="GPT-4o"))
 
     # Google
     if Confirm.ask("Use Google (Gemini) models?", default=False):
-        models.append(
-            ModelConfig(
-                model_id=Prompt.ask("Google model ID", default="gemini/gemini-2.5-pro"),
-                label="Gemini",
-            )
-        )
+        models.append(ModelConfig(model_id=_pick_model("google", "Gemini"), label="Gemini"))
 
     if not models:
         console.print("[red]At least one model is required.[/red] Re-run `synth init`.")
