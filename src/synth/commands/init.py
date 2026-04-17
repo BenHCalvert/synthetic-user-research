@@ -176,9 +176,7 @@ def init_command(
     # Web search
     web_search = WebSearchConfig()
     if Confirm.ask("Configure web search (for persona research)?", default=True):
-        console.print(
-            "  [dim]duckduckgo requires no API key — easiest option to get started[/dim]"
-        )
+        console.print("  [dim]duckduckgo requires no API key — easiest option to get started[/dim]")
         provider = Prompt.ask(
             "Search provider",
             choices=["duckduckgo", "tavily", "serpapi", "brave"],
