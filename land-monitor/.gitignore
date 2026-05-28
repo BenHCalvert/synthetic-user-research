@@ -1,0 +1,11 @@
+*.db
+*.db-shm
+*.db-wal
+.env
+__pycache__/
+*.pyc
+.playwright/
+node_modules/
+frontend/dist/
+venv/
+*.log
